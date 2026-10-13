@@ -1,0 +1,17 @@
+.venv/
+.uv-cache/
+.uv-python/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.env
+.env.*
+*.pem
+*.key
+data/raw/
+data/processed/
+outputs/
+material datas/
+2shell/

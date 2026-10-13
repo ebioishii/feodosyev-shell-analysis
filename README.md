@@ -1,0 +1,45 @@
+# Feodosyev Shell Analysis
+
+用 Python 建立可追溯的再生冷卻結構分析工具。目前完成的範圍是材料資料管理與**單調載入**應力–應變曲線。雙層薄殼求解器是下一階段工作；目前尚無可用的 `p_g–ΔR` 結果。
+
+## 快速開始
+
+安裝 [uv](https://docs.astral.sh/uv/) 後，在此資料夾執行：
+
+```powershell
+uv python install 3.12
+uv sync --locked --extra dev
+uv run --locked pytest
+uv run --locked ruff check .
+uv run --locked jupyter lab
+```
+
+開啟 `notebooks/01_material_curves.ipynb`，從第一格依序執行。範例資料在 `examples/synthetic/`，全部是人工數值，供操作與程式測試，**不能作為 SS316 材料證據**。圖面可旋轉、縮放、查值；Notebook 會將離線 HTML 與重現紀錄寫入 `outputs/`。
+
+如已有 Python 3.12，uv 可以使用現有安裝。`python` 指令若指向 Windows Store 但無法啟動，仍可透過 uv 管理專案環境。
+
+## 資料與單位
+
+內部統一使用 K、Pa、m、無因次應變。圖面使用 °C、MPa、應變百分比，軸標清楚區分。每一資料集由 `material.json` 加 CSV 表格組成；檔案保留材料條件、來源狀態、處理方式、單位及曲線定義。資料缺漏會明確顯示，不由程式猜測或填補。
+
+目前外部參考資料放在 `D:\LAB\regen\references`，不屬於 Git Repository。若需匯入現有三份 SS316 CSV，可在 Python 環境中執行：
+
+```python
+from feodosyev_shell.materials.legacy import import_legacy_ss316
+material = import_legacy_ss316(
+    r"D:\LAB\regen\references\SS316_data", "data/processed/ss316_local"
+)
+print(material.completeness_report())
+```
+
+匯入只處理彈性模數、降伏強度及泊松比。現有資料缺少完整曲線與熱膨脹係數；來源、材料狀態和使用權仍待核對。`data/raw/`、`data/processed/` 與 `outputs/` 不提交 GitHub。
+
+## 物理假設與限制
+
+第一版插值先沿應變方向、再沿溫度方向做分段線性插值，僅在曲線共同有效範圍內計算。工程應力應變轉為真量時，須確認資料位於均勻變形區間。單調曲線沒有載入歷史，不能回答卸載、殘留應變、疲勞或壽命問題。[完整假設](docs/assumptions.md)
+
+## 驗證與開發
+
+`tests/` 使用人工可手算資料，檢查原始節點、溫度中點、單位、轉換和非法輸入。測試通過代表程式行為符合這些案例；SS316 資料的物理有效性與 Feodosyev 文獻方程仍需另外驗證。[階段路線](docs/roadmap.md)
+
+`main` 保存已驗證成果。改動使用 `feature/...` 或 `fix/...` 短期分支，經 PR 與 CI 檢查後合併。規劃中的階段標籤為 `v0.1.0`、`v0.2.0`、`v0.3.0`，僅在對應階段完成驗收後建立。尚未選擇開源授權。
