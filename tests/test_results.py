@@ -12,3 +12,5 @@ def test_manifest_hashes_are_repeatable(tmp_path):
     assert first["sha256"] == second["sha256"]
     assert first["units"]["stress"] == "Pa"
     assert len(first["sha256"]["material.json"]) == 64
+    assert first["git_commit"] is not None
+    assert isinstance(first["git_dirty"], bool)

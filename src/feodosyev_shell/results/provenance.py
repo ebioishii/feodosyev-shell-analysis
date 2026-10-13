@@ -13,8 +13,10 @@ from feodosyev_shell.materials.dataset import Material
 
 
 def _git_output(root: Path, *arguments: str) -> str | None:
-    result = subprocess.run(["git", "-C", str(root), *arguments], capture_output=True,
-                            text=True, check=False)
+    result = subprocess.run(
+        ["git", "-c", f"safe.directory={root}", "-C", str(root), *arguments],
+        capture_output=True, text=True, check=False,
+    )
     return result.stdout.strip() if result.returncode == 0 else None
 
 
