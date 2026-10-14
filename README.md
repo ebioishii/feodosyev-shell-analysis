@@ -1,6 +1,6 @@
 # Feodosyev Shell Analysis
 
-用 Python 建立可追溯的再生冷卻結構分析工具。目前完成的範圍是材料資料管理與**單調載入**應力–應變曲線。雙層薄殼求解器是下一階段工作；目前尚無可用的 `p_g–ΔR` 結果。
+用 Python 建立可追溯的再生冷卻結構分析工具。目前包含材料資料管理、**單調載入**應力–應變曲線，以及 Phase 3A 的**線彈性、僅環向**雙層薄殼求解器。Phase 3A 的輸出是簡化模型結果，尚非實際引擎強度或壽命預測。
 
 ## 快速開始
 
@@ -58,10 +58,39 @@ print(beta_100, beta_315, eps_th)
 
 ## 物理假設與限制
 
+### Phase 3A 線彈性雙殼範例
+
+在專案根目錄執行：
+
+```powershell
+uv run --locked python examples/phase3a_demo.py
+```
+
+這使用 `examples/synthetic_shell/` 的**人工合成材料**。結果會寫入本機 `outputs/phase3a_demo/`：`pressure_sweep.csv`、壓力–位移圖、內外殼應力與熱應變比較圖及 `manifest.json`。該資料夾不會提交 GitHub。
+
+在 Python 或 VS Code Notebook 中單次求解：
+
+```python
+from feodosyev_shell.materials import load_material
+from feodosyev_shell.solvers import LinearShellCase, solve_linear_shell
+
+material = load_material("examples/synthetic_shell")
+case = LinearShellCase(
+    radius_m=0.1, inner_thickness_m=0.001, outer_thickness_m=0.002,
+    inner_temperature_k=400, outer_temperature_k=300,
+    stress_free_temperature_k=300, gas_pressure_pa=1e6,
+)
+result = solve_linear_shell(case, material)
+print(result.radial_displacement_m, result.inner.hoop_stress_pa,
+      result.outer.hoop_stress_pa, result.elastic_prediction_credible)
+```
+
+`result` 另含內外殼的總／熱／機械環向應變。輸入固定使用 m、K、Pa。內壓、拉應力及向外位移為正。`elastic_prediction_credible=False` 表示至少一殼超過資料表所選的降伏強度，**不代表已證實結構失效**；若沒有降伏資料，該欄為 `None`。SS316 的材料狀態與這個界限尚待驗證。[Phase 3A 公式與假設](docs/phase3a_plan.md)、[驗證紀錄](docs/phase3a_validation.md)
+
 第一版插值先沿應變方向、再沿溫度方向做分段線性插值，僅在曲線共同有效範圍內計算。工程應力應變轉為真量時，須確認資料位於均勻變形區間。單調曲線沒有載入歷史，不能回答卸載、殘留應變、疲勞或壽命問題。[完整假設](docs/assumptions.md)
 
 ## 驗證與開發
 
-`tests/` 使用人工可手算資料，檢查原始節點、溫度中點、單位、轉換和非法輸入。測試通過代表程式行為符合這些案例；SS316 資料的物理有效性與 Feodosyev 文獻方程仍需另外驗證。[階段路線](docs/roadmap.md)
+`tests/` 使用人工可手算資料，檢查原始節點、溫度中點、單位、轉換和非法輸入。Phase 3A 另用獨立手算值核對雙殼環向平衡。測試通過代表程式符合這些案例；SS316 資料的物理有效性及真實引擎的結構行為仍需另外驗證。[階段路線](docs/roadmap.md)
 
 `main` 保存已驗證成果。改動使用 `feature/...` 或 `fix/...` 短期分支，經 PR 與 CI 檢查後合併。規劃中的階段標籤為 `v0.1.0`、`v0.2.0`、`v0.3.0`，僅在對應階段完成驗收後建立。尚未選擇開源授權。

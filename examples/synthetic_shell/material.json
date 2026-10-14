@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "dataset_version": "synthetic-shell-1",
+  "material": "SYNTHETIC_SHELL_NOT_SS316",
+  "condition": "hand-defined constant elastic properties",
+  "source_status": "synthetic",
+  "source_note": "Artificial teaching and code-validation values, not experimental evidence",
+  "properties": [
+    {"name": "youngs_modulus", "file": "youngs_modulus.csv", "unit": "Pa", "source_location": "synthetic"},
+    {"name": "yield_strength", "file": "yield_strength.csv", "unit": "Pa", "source_location": "synthetic indicative threshold"},
+    {"name": "thermal_expansion", "file": "thermal_expansion.csv", "unit": "1/K", "coefficient_type": "mean", "reference_temperature_k": 300, "source_location": "synthetic"}
+  ],
+  "curves": []
+}
