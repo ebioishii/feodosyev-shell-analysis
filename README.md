@@ -1,6 +1,6 @@
 # Feodosyev Shell Analysis
 
-用 Python 建立可追溯的再生冷卻結構分析工具。目前包含材料資料管理、**單調載入**應力–應變曲線，以及 Phase 3A 的**線彈性、僅環向**雙層薄殼求解器。Phase 3A 的輸出是簡化模型結果，尚非實際引擎強度或壽命預測。
+用 Python 建立可追溯的再生冷卻結構分析工具。目前包含材料資料管理、**單調載入**應力–應變曲線、Phase 3A 的**僅環向線彈性**雙殼模型，以及 Phase 3B 的**雙軸線彈性與合成材料增量**模型。這些簡化模型尚非實際引擎強度或壽命預測。
 
 ## 快速開始
 
@@ -111,6 +111,16 @@ print(result.radial_displacement_m, result.inner.hoop_stress_pa,
 ```
 
 `result` 另含內外殼的總／熱／機械環向應變。輸入固定使用 m、K、Pa。內壓、拉應力及向外位移為正。`elastic_prediction_credible=False` 表示至少一殼超過資料表所選的降伏強度，**不代表已證實結構失效**；若沒有降伏資料，該欄為 `None`。SS316 的材料狀態與這個界限尚待驗證。[Phase 3A 公式與假設](docs/phase3a_plan.md)、[驗證紀錄](docs/phase3a_validation.md)
+
+### Phase 3B 雙軸與合成塑性範例
+
+3B-1 加入共同軸向應變、軸向力平衡及泊松效應；`BiaxialLinearCase` 另有 `axial_force_ratio`，理想閉端圓筒示例使用 `0.5`。3B-2 用**人工合成**雙線性 J2 材料逐步加壓及卸壓：
+
+```powershell
+uv run --locked python examples/phase3b_synthetic_cycle.py
+```
+
+本機 `outputs/phase3b_synthetic_cycle/` 會有壓力–位移循環圖、每一步的 CSV 與重現紀錄。卸載至零壓後的殘餘位移是**合成模型示範**，不是 SS316 實驗結果。塑性狀態要按步驟傳遞，不能用最終壓力和溫度重新推算。[公式、手算案例及限制](docs/phase3b_validation.md)
 
 第一版插值先沿應變方向、再沿溫度方向做分段線性插值，僅在曲線共同有效範圍內計算。工程應力應變轉為真量時，須確認資料位於均勻變形區間。單調曲線沒有載入歷史，不能回答卸載、殘留應變、疲勞或壽命問題。[完整假設](docs/assumptions.md)
 
