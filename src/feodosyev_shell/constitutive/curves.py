@@ -10,8 +10,35 @@ import numpy as np
 from feodosyev_shell.materials.dataset import CURVE_KINDS, Material, _finite_number
 
 
+def _bracket(material: Material, temperature_k: float) -> tuple[float, float]:
+    if not material.curves:
+        raise ValueError("No stress-strain curves available")
+    temperature = _finite_number(temperature_k, "temperature_k")
+    knots = sorted(material.curves)
+    if not knots[0] <= temperature <= knots[-1]:
+        raise ValueError("Temperature outside available curve range")
+    high = int(np.searchsorted(knots, temperature))
+    low = high if knots[high] == temperature else high - 1
+    return knots[low], knots[high]
+
+
+def curve_strain_intervals(material: Material, temperature_k: float) -> list[tuple[float, float]]:
+    """Supported strain spans at T: intersection of the two bracketing curves."""
+    low, high = _bracket(material, temperature_k)
+    return [(max(a, c), min(b, d))
+            for a, b in material.strain_intervals(low)
+            for c, d in material.strain_intervals(high)
+            if max(a, c) <= min(b, d)]
+
+
+def _allow_curve_use(material: Material, allow_provisional: bool) -> None:
+    if material.is_provisional and not allow_provisional:
+        raise ValueError("Provisional dataset: pass allow_provisional=True for exploratory use")
+
+
 def evaluate_curve(
-    material: Material, temperature_k: float, strain: float | np.ndarray, *, kind: str
+    material: Material, temperature_k: float, strain: float | np.ndarray, *, kind: str,
+    allow_provisional: bool = False,
 ) -> float | np.ndarray:
     """Linear interpolation in strain and then between the bracketing temperatures.
 
@@ -20,28 +47,28 @@ def evaluate_curve(
     """
     if kind not in CURVE_KINDS or material.curve_kind != kind:
         raise ValueError("Requested curve definition does not match the dataset")
-    if not material.curves:
-        raise ValueError("No full stress-strain curves available")
+    _allow_curve_use(material, allow_provisional)
+    low, high = _bracket(material, temperature_k)
     temperature = _finite_number(temperature_k, "temperature_k")
-    knots = np.array(sorted(material.curves))
-    if temperature < knots[0] or temperature > knots[-1]:
-        raise ValueError("Temperature outside available curve range")
     values = np.asarray(strain, dtype=float)
     if not np.isfinite(values).all():
         raise ValueError("Strain must be finite")
-    high = int(np.searchsorted(knots, temperature, side="left"))
-    low = high if knots[high] == temperature else high - 1
-    x0, y0 = material.curves[float(knots[low])]
-    x1, y1 = material.curves[float(knots[high])]
+    x0, y0 = material.curves[low]
+    x1, y1 = material.curves[high]
     minimum, maximum = max(x0[0], x1[0]), min(x0[-1], x1[-1])
     if minimum > maximum or np.any(values < minimum) or np.any(values > maximum):
         raise ValueError(f"Strain outside common range [{minimum}, {maximum}]")
+    supported = np.zeros(values.shape, dtype=bool)
+    for left, right in curve_strain_intervals(material, temperature):
+        supported |= (values >= left) & (values <= right)
+    if not supported.all():
+        raise ValueError("Strain falls in an excluded data gap; interpolation is unavailable")
     stress0 = np.interp(values, x0, y0)
     if low == high:
         result = stress0
     else:
         stress1 = np.interp(values, x1, y1)
-        fraction = (temperature - knots[low]) / (knots[high] - knots[low])
+        fraction = (temperature - low) / (high - low)
         result = stress0 + fraction * (stress1 - stress0)
     return float(result) if values.ndim == 0 else result
 

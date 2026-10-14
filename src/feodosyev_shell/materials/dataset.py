@@ -61,6 +61,16 @@ class Material:
     def curve_kind(self) -> str | None:
         return self.metadata.get("curve_kind")
 
+    @property
+    def is_provisional(self) -> bool:
+        return self.metadata.get("source_status") == "digitized_provisional"
+
+    def strain_intervals(self, temperature_k: float) -> list[tuple[float, float]]:
+        """Closed supported intervals at a source temperature; gaps stay unavailable."""
+        entry = next(e for e in self.metadata["curves"] if e["temperature_k"] == temperature_k)
+        x = self.curves[temperature_k][0]
+        return [tuple(pair) for pair in entry.get("strain_intervals", [[x[0], x[-1]]])]
+
     def property_at(self, name: str, temperature_k: float) -> float:
         if name not in self.properties:
             raise ValueError(f"Material property unavailable: {name}")
@@ -83,7 +93,11 @@ class Material:
             "available_properties": sorted(self.properties),
             "missing_properties": missing,
             "curve_temperatures_k": sorted(self.curves),
-            "full_stress_strain_curves_available": bool(self.curves),
+            "curve_data_available": bool(self.curves),
+            "full_stress_strain_curves_available": (
+                bool(self.curves) and not self.metadata.get("partial_curves", False)
+            ),
+            "provisional": self.is_provisional,
             "source_status": self.metadata.get("source_status", "unknown"),
             "condition": self.metadata.get("condition", "unknown"),
             "thermal_expansion_type": (
@@ -92,7 +106,10 @@ class Material:
             "thermal_reference_temperature_k": (
                 thermal_entry.get("reference_temperature_k") if thermal_entry else None
             ),
-            "provisional_curve_data_available": "provisional_curve_audit" in self.metadata,
+            "provisional_curve_data_available": (
+                "provisional_curve_audit" in self.metadata
+                or (self.is_provisional and bool(self.curves))
+            ),
             "provisional_curve_reason": self.metadata.get("provisional_curve_audit", {}).get(
                 "reason"
             ),
@@ -143,5 +160,19 @@ def load_material(directory: str | Path) -> Material:
             raise ValueError("Curve strain must be nonnegative and strictly increasing")
         if np.any(stress < 0):
             raise ValueError("Curve stress must be nonnegative")
+        if "strain_intervals" in entry:
+            intervals = np.asarray(entry["strain_intervals"], dtype=float)
+            if (intervals.ndim != 2 or intervals.shape[1] != 2 or len(intervals) == 0
+                    or not np.isfinite(intervals).all()
+                    or np.any(intervals[:, 0] >= intervals[:, 1])
+                    or np.any(intervals[1:, 0] <= intervals[:-1, 1])):
+                raise ValueError("Invalid strain intervals: require sorted disjoint nonempty spans")
+            covered = np.zeros(len(strain), dtype=bool)
+            for left, right in intervals:
+                if left not in strain or right not in strain:
+                    raise ValueError("Strain interval endpoints must be curve nodes")
+                covered |= (strain >= left) & (strain <= right)
+            if not covered.all():
+                raise ValueError("All curve nodes must belong to a strain interval")
         curves[temperature] = (strain, stress)
     return Material(root, metadata, properties, curves)
