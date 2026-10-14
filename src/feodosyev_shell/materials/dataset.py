@@ -71,6 +71,16 @@ class Material:
         x = self.curves[temperature_k][0]
         return [tuple(pair) for pair in entry.get("strain_intervals", [[x[0], x[-1]]])]
 
+    @property
+    def has_partial_curves(self) -> bool:
+        """Infer observable incompleteness instead of trusting one metadata flag."""
+        return (
+            self.is_provisional
+            or self.metadata.get("partial_curves", False)
+            or any(x[0] != 0 or len(self.strain_intervals(t)) > 1
+                   for t, (x, _) in self.curves.items())
+        )
+
     def property_at(self, name: str, temperature_k: float) -> float:
         if name not in self.properties:
             raise ValueError(f"Material property unavailable: {name}")
@@ -95,7 +105,7 @@ class Material:
             "curve_temperatures_k": sorted(self.curves),
             "curve_data_available": bool(self.curves),
             "full_stress_strain_curves_available": (
-                bool(self.curves) and not self.metadata.get("partial_curves", False)
+                bool(self.curves) and not self.has_partial_curves
             ),
             "provisional": self.is_provisional,
             "source_status": self.metadata.get("source_status", "unknown"),
@@ -123,6 +133,8 @@ def load_material(directory: str | Path) -> Material:
         raise ValueError("Unsupported schema version or missing material name")
     if not metadata.get("dataset_version") or not metadata.get("condition"):
         raise ValueError("Dataset version and material condition are required")
+    if not isinstance(metadata.get("partial_curves", False), bool):
+        raise ValueError("partial_curves must be a boolean")
     properties = {}
     for entry in metadata.get("properties", []):
         name = entry["name"]
@@ -175,4 +187,7 @@ def load_material(directory: str | Path) -> Material:
             if not covered.all():
                 raise ValueError("All curve nodes must belong to a strain interval")
         curves[temperature] = (strain, stress)
-    return Material(root, metadata, properties, curves)
+    material = Material(root, metadata, properties, curves)
+    if material.has_partial_curves and not metadata.get("partial_curves", False):
+        raise ValueError("Partial curves require partial_curves: true in material.json")
+    return material

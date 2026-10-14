@@ -40,6 +40,33 @@ def test_missing_property_only_blocks_that_property(tmp_path):
         material.property_at("thermal_expansion", 350)
 
 
+@pytest.mark.parametrize("case", ["nonzero_start", "gap", "provisional"])
+def test_partial_curve_metadata_cannot_claim_full_curves(tmp_path, case):
+    shutil.copytree(EXAMPLE, tmp_path / "material")
+    root = tmp_path / "material"
+    path = root / "material.json"
+    metadata = json.loads(path.read_text(encoding="utf-8"))
+    if case == "nonzero_start":
+        for curve in metadata["curves"]:
+            table = root / curve["file"]
+            table.write_text("strain,stress_pa\n0.001,200000000\n0.003,240000000\n"
+                             if curve["temperature_k"] == 300 else
+                             "strain,stress_pa\n0.001,180000000\n0.003,210000000\n",
+                             encoding="utf-8")
+    elif case == "gap":
+        metadata["curves"][0]["strain_intervals"] = [[0, 0.001], [0.003, 0.005]]
+    else:
+        metadata["source_status"] = "digitized_provisional"
+    path.write_text(json.dumps(metadata), encoding="utf-8")
+    with pytest.raises(ValueError, match="partial_curves"):
+        load_material(root)
+    metadata["partial_curves"] = True
+    path.write_text(json.dumps(metadata), encoding="utf-8")
+    report = load_material(root).completeness_report()
+    assert report["curve_data_available"] is True
+    assert report["full_stress_strain_curves_available"] is False
+
+
 def test_legacy_mapping(tmp_path):
     source = tmp_path / "source"
     source.mkdir()
