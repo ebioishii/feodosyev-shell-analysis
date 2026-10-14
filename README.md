@@ -32,7 +32,32 @@ material = import_legacy_ss316(
 print(material.completeness_report())
 ```
 
-匯入會處理彈性模數、降伏強度、泊松比，以及以 0 °C 為參考的**平均熱膨脹係數**。新加入的 `SS316_plastic_StressStrain.csv` 目前只有品質摘要與雜湊紀錄，沒有被轉成正式曲線：圖像擷取資料仍有重複應變與缺少初始段。來源、材料狀態、使用權及曲線整理方式仍待核對。`data/raw/`、`data/processed/` 與 `outputs/` 不提交 GitHub。
+匯入會處理彈性模數、降伏強度、泊松比，以及以 0 °C 為參考的**平均熱膨脹係數**。這個匯入函式對 `SS316_plastic_StressStrain.csv` 僅產生品質摘要。若要使用暫用曲線，請使用下面的獨立流程。來源、材料狀態及使用權仍待核對。`data/raw/`、`data/processed/` 與 `outputs/` 不提交 GitHub。
+
+### Phase 2：暫用 SS316 曲線
+
+在 VS Code 開啟 `notebooks/02_provisional_ss316.ipynb`，選擇專案 `.venv` 的 Python 核心，從第一格依序執行。不需要另外啟動 JupyterLab。也可以在你的 `test.ipynb` 執行：
+
+```python
+from feodosyev_shell.materials.provisional import prepare_provisional_ss316
+from feodosyev_shell.constitutive import curve_strain_intervals, evaluate_curve
+
+curves = prepare_provisional_ss316(
+    r"D:\LAB\regen\references\SS316_data\SS316_plastic_StressStrain.csv",
+    "data/processed/ss316_provisional_v1",
+)
+temperature = 400 + 273.15
+print(curve_strain_intervals(curves, temperature))
+stress = evaluate_curve(curves, temperature, 0.2,
+                       kind="engineering", allow_provisional=True)
+print(stress / 1e6, "MPa")  # 0.2 是 20% 工程應變
+```
+
+程式只保留可辨識、沒有重複應變座標的連續區段。每段至少兩點；不平均重複值、不補初始段、不跨越排除區域。查詢缺口或範圍外會報錯。`allow_provisional=True` 明確表示接受暫用資料作探索；不代表材料已驗證。
+
+Notebook 會輸出二維圖、三維離線 HTML、插值 CSV 與重現紀錄至 `outputs/phase2_provisional/`。每筆原始資料的去留原因保存在新資料集的 `selection_audit.csv`。既有 `ss316_local` 與新曲線分開，避免把未確認相容的來源混合。
+
+工程量轉真量的公式已在合成範例驗證；暫用 SS316 的均勻變形範圍未確認，因此不自動轉成真塑性曲線。完整處理規則與驗收狀態見 [Phase 2 說明](docs/phase2.md)。
 
 ### 平均熱膨脹係數的使用流程
 

@@ -25,6 +25,11 @@ def write_manifest(material: Material, output_file: str | Path, *, settings: dic
     files = [material.root / "material.json"]
     files += [material.root / entry["file"] for entry in material.metadata.get("properties", [])]
     files += [material.root / entry["file"] for entry in material.metadata.get("curves", [])]
+    for filename in material.metadata.get("auxiliary_files", []):
+        path = (material.root / filename).resolve()
+        if not path.is_relative_to(material.root.resolve()):
+            raise ValueError("Auxiliary file must stay inside the dataset directory")
+        files.append(path)
     hashes = {
         path.relative_to(material.root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
         for path in sorted(set(files))
@@ -35,6 +40,10 @@ def write_manifest(material: Material, output_file: str | Path, *, settings: dic
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "material": material.metadata["material"],
         "dataset_version": material.metadata["dataset_version"],
+        "source_status": material.metadata.get("source_status", "unknown"),
+        "source_sha256": material.metadata.get("source_sha256"),
+        "selection_policy": material.metadata.get("selection_policy"),
+        "limitations": material.metadata.get("limitations", []),
         "sha256": hashes,
         "git_commit": _git_output(repo, "rev-parse", "HEAD"),
         "git_dirty": None if status is None else bool(status),
