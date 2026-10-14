@@ -73,6 +73,11 @@ class Material:
     def completeness_report(self) -> dict:
         expected = ["youngs_modulus", "yield_strength", "poisson_ratio", "thermal_expansion"]
         missing = [name for name in expected if name not in self.properties]
+        thermal_entry = next(
+            (entry for entry in self.metadata.get("properties", [])
+             if entry["name"] == "thermal_expansion"),
+            None,
+        )
         return {
             "material": self.metadata["material"],
             "available_properties": sorted(self.properties),
@@ -81,6 +86,16 @@ class Material:
             "full_stress_strain_curves_available": bool(self.curves),
             "source_status": self.metadata.get("source_status", "unknown"),
             "condition": self.metadata.get("condition", "unknown"),
+            "thermal_expansion_type": (
+                thermal_entry.get("coefficient_type") if thermal_entry else None
+            ),
+            "thermal_reference_temperature_k": (
+                thermal_entry.get("reference_temperature_k") if thermal_entry else None
+            ),
+            "provisional_curve_data_available": "provisional_curve_audit" in self.metadata,
+            "provisional_curve_reason": self.metadata.get("provisional_curve_audit", {}).get(
+                "reason"
+            ),
         }
 
 

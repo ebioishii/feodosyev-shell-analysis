@@ -32,7 +32,7 @@ material = import_legacy_ss316(
 print(material.completeness_report())
 ```
 
-匯入只處理彈性模數、降伏強度及泊松比。現有資料缺少完整曲線與熱膨脹係數；來源、材料狀態和使用權仍待核對。`data/raw/`、`data/processed/` 與 `outputs/` 不提交 GitHub。
+匯入會處理彈性模數、降伏強度、泊松比，以及以 0 °C 為參考的**平均熱膨脹係數**。新加入的 `SS316_plastic_StressStrain.csv` 目前只有品質摘要與雜湊紀錄，沒有被轉成正式曲線：圖像擷取資料仍有重複應變與缺少初始段。來源、材料狀態、使用權及曲線整理方式仍待核對。`data/raw/`、`data/processed/` 與 `outputs/` 不提交 GitHub。
 
 ## 物理假設與限制
 
