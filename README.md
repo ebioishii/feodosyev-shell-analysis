@@ -130,6 +130,16 @@ uv run --locked python examples/phase3b25_staged_yield.py
 
 本機 `outputs/phase3b25_staged_yield/` 會產生每一步的 CSV、壓力–位移／塑性應變圖和重現紀錄。[人工參數、手算值與驗收限制](docs/phase3b25_staged_yield.md)。
 
+### Phase 3B-3 材料證據檢查
+
+作者資料到齊前，可先查看現有暫用 SS316 曲線缺少哪些證據：
+
+```powershell
+uv run --locked python scripts/audit_phase3b3_evidence.py
+```
+
+程式在本機 `outputs/phase3b3_evidence/` 產生待填的證據表與逐溫度阻擋報告，不會產生正式塑性模型。[欄位和使用方式](docs/phase3b3_evidence_gate.md)。
+
 第一版插值先沿應變方向、再沿溫度方向做分段線性插值，僅在曲線共同有效範圍內計算。工程應力應變轉為真量時，須確認資料位於均勻變形區間。單調曲線沒有載入歷史，不能回答卸載、殘留應變、疲勞或壽命問題。[完整假設](docs/assumptions.md)
 
 ## 驗證與開發
