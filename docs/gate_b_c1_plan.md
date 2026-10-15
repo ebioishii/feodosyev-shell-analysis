@@ -19,4 +19,4 @@
 
 建立每溫度的 `cutoff`、證據來源、信心及核准狀態欄位；核准後先裁切，再以同試片條件相容的 E(T) 計算真塑性應變。將缺少的初始段與資料缺口留為不可用；檢查 0.2% proof stress 與初始降伏定義；對 DSA 區保留鋸齒及應變率限制，並量化擬合不確定性。正式 `σ_flow=f(ε_p,T)` 候選需另立測試基準。Phase 3 暫不開始。
 
-本機完整結果見 `outputs/phase2_validation/phase2_gate_b_c1_report.md`。PR #3 仍為 Draft。
+本機完整結果見 `outputs/phase2_validation/phase2_gate_b_c1_report.md`。PR #3 的程式內容已隨整合 PR #5 合入 `main`；上述材料證據缺口仍存在。
