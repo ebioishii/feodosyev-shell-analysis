@@ -88,3 +88,18 @@ def test_step_refinement_reduces_endpoint_discrepancy():
         second_change = abs(fine[key] - finer[key])
         assert second_change < first_change
     assert abs(coarse["radial_displacement_m"] - finer["radial_displacement_m"]) < 1e-6
+
+
+@pytest.mark.parametrize("step", [0.7e6, 4e6, 7e6])
+def test_pressure_path_always_stops_at_requested_endpoint(step):
+    pressures = [row["pressure_pa"] for row in run_path(step)
+                 if row["path_segment"] == "pressure"]
+    assert pressures[-1] == 6e6
+    assert max(pressures) == 6e6
+    assert all(a < b for a, b in zip(pressures, pressures[1:], strict=False))
+
+
+@pytest.mark.parametrize("step", [0, -1, float("nan"), float("inf")])
+def test_invalid_pressure_steps_are_rejected(step):
+    with pytest.raises(ValueError, match="finite and positive"):
+        run_path(step)

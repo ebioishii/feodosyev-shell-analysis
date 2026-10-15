@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import importlib.metadata
 import json
+import math
+import platform
 import subprocess
 from dataclasses import asdict, replace
 from pathlib import Path
@@ -58,13 +61,18 @@ def synthetic_layers() -> tuple[SyntheticShellLayer, SyntheticShellLayer]:
 
 def run_path(pressure_step_pa: float = PRESSURE_STEP_PA) -> list[dict[str, float | str | int]]:
     """Heat at zero pressure, then pressurize; pass each accepted state onward."""
+    if not math.isfinite(pressure_step_pa) or pressure_step_pa <= 0:
+        raise ValueError("Pressure step must be finite and positive")
     inner, outer = synthetic_layers()
     state = IncrementalShellState()
     rows = []
     heating = [(temperature, 0.0) for temperature in (300, 325, 350, 375, 400)]
-    loading = [(400, float(p)) for p in np.arange(
-        pressure_step_pa, MAX_PRESSURE_PA + pressure_step_pa / 2, pressure_step_pa
-    )]
+    # All step-size comparisons must end at the same pressure. Shorten the final
+    # increment when the requested step does not divide the pressure range.
+    pressures = np.append(
+        np.arange(pressure_step_pa, MAX_PRESSURE_PA, pressure_step_pa), MAX_PRESSURE_PA
+    )
+    loading = [(400, float(p)) for p in pressures]
     for index, (inner_temperature, pressure) in enumerate(heating + loading):
         case = BiaxialLinearCase(
             0.1, 0.001, 0.002, inner_temperature, 300, 300, pressure, 0.5,
@@ -145,6 +153,10 @@ def main() -> None:
                            for path in sorted(FIXTURE.iterdir()) if path.is_file()},
         "inner_law": asdict(synthetic_layers()[0].law),
         "outer_law": asdict(synthetic_layers()[1].law),
+        "geometry_m": {"radius": 0.1, "inner_thickness": 0.001, "outer_thickness": 0.002},
+        "axial_force_ratio": 0.5,
+        "units": {"temperature": "K", "pressure_and_stress": "Pa", "length": "m",
+                  "strain": "1"},
         "reference_temperature_k": 300,
         "outer_temperature_k": 300,
         "inner_heating_temperatures_k": [300, 325, 350, 375, 400],
@@ -152,6 +164,11 @@ def main() -> None:
         "max_pressure_pa": MAX_PRESSURE_PA,
         "git_commit": commit.stdout.strip() if commit.returncode == 0 else None,
         "tracked_files_dirty": bool(dirty.stdout.strip()) if dirty.returncode == 0 else None,
+        "python_version": platform.python_version(),
+        "dependencies": {name: importlib.metadata.version(name)
+                         for name in ("numpy", "pandas", "scipy", "matplotlib")},
+        "uv_lock_sha256": hashlib.sha256((ROOT / "uv.lock").read_bytes()).hexdigest(),
+        "example_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "csv_sha256": hashlib.sha256(csv_path.read_bytes()).hexdigest(),
     }
     (OUTPUT / "manifest.json").write_text(

@@ -37,6 +37,8 @@ uv run --locked ruff check .
 
 腳本在本機 `outputs/phase3b25_staged_yield/` 產生 `staged_path.csv`、`staged_yield.png` 和 `manifest.json`。manifest 記錄來源合成檔案 SHA-256、本構參數、載入步長、CSV SHA-256、Git commit 及已追蹤檔案有無修改。CSV 連續兩次執行的 SHA-256 均為 `0A38FC975E7DFEB9F05AB10F56BE1B8CF957F8717558EBAC99D633FB3F28BC7A`。輸出資料夾已被 Git 排除。
 
+2026-10-15 審查已修正非整除步長：所有掃描均恰好停在 6 MPa，最後一步必要時縮短。manifest 另記錄幾何、軸向力比例、單位、Python／套件版本與程式／鎖定檔雜湊。預設 0.25 MPa 案例的數值結果不變，詳見 [整合驗收](integration_review_2026-10-15.md)。
+
 ## 驗收界限與下一步
 
 這次驗證的是：程式能處理溫差自平衡應力、先外殼後內殼的塑性發展，以及指定增量路徑上的平衡與步長敏感度。人工降伏強度和硬化參數沒有 SS316 實驗依據。它也未驗證真實幾何、端部載荷、溫度場、局部冷卻通道、失效、疲勞或壽命。Phase 3B-3 仍需先通過 SS316 真塑性曲線、均勻變形範圍及材料狀態相容性的證據關卡，才可研究材料相關的 Stage II–IV。
