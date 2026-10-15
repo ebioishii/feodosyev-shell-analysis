@@ -83,3 +83,26 @@ def test_invalid_material_and_strain_rejected():
     with pytest.raises(ValueError, match="finite"):
         model().update(mechanical_axial_strain=float("nan"), mechanical_hoop_strain=0,
                        previous_state=model().initial_state())
+
+
+def test_equal_biaxial_plasticity_and_elastic_unloading_from_hand_solution():
+    # Equal tensile stresses (s, s, 0) have von Mises stress s and plastic
+    # flow direction (1/2, 1/2, -1). Select accumulated plastic strain q=0.002.
+    # H=100 GPa*10 GPa/(100-10) GPa, s=200 MPa+H*q.
+    law = SyntheticBilinearJ2(100e9, 0.3, 200e6, 10e9)
+    expected_stress = 200e6 + (100e9 / 9) * 0.002
+    total_strain = 0.7 * expected_stress / 100e9 + 0.001
+    loaded = law.update(mechanical_axial_strain=total_strain,
+                        mechanical_hoop_strain=total_strain,
+                        previous_state=law.initial_state())
+    assert loaded.axial_stress_pa == pytest.approx(expected_stress, rel=1e-8)
+    assert loaded.hoop_stress_pa == pytest.approx(expected_stress, rel=1e-8)
+    assert loaded.state.plastic_axial_strain == pytest.approx(0.001, rel=1e-8)
+    assert loaded.state.plastic_hoop_strain == pytest.approx(0.001, rel=1e-8)
+    assert loaded.state.plastic_thickness_strain == pytest.approx(-0.002, rel=1e-8)
+    assert loaded.state.equivalent_plastic_strain == pytest.approx(0.002, rel=1e-8)
+    unloaded = law.update(mechanical_axial_strain=0.001, mechanical_hoop_strain=0.001,
+                          previous_state=loaded.state)
+    assert unloaded.axial_stress_pa == pytest.approx(0, abs=1)
+    assert unloaded.hoop_stress_pa == pytest.approx(0, abs=1)
+    assert unloaded.state == loaded.state

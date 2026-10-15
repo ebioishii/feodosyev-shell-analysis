@@ -122,6 +122,14 @@ uv run --locked python examples/phase3b_synthetic_cycle.py
 
 本機 `outputs/phase3b_synthetic_cycle/` 會有壓力–位移循環圖、每一步的 CSV 與重現紀錄。卸載至零壓後的殘餘位移是**合成模型示範**，不是 SS316 實驗結果。塑性狀態要按步驟傳遞，不能用最終壓力和溫度重新推算。[公式、手算案例及限制](docs/phase3b_validation.md)
 
+3B-2.5 另以兩殼不同的**人工降伏門檻**，示範溫差拘束、外殼先降伏及繼續加壓後兩殼都塑性化：
+
+```powershell
+uv run --locked python examples/phase3b25_staged_yield.py
+```
+
+本機 `outputs/phase3b25_staged_yield/` 會產生每一步的 CSV、壓力–位移／塑性應變圖和重現紀錄。[人工參數、手算值與驗收限制](docs/phase3b25_staged_yield.md)。
+
 第一版插值先沿應變方向、再沿溫度方向做分段線性插值，僅在曲線共同有效範圍內計算。工程應力應變轉為真量時，須確認資料位於均勻變形區間。單調曲線沒有載入歷史，不能回答卸載、殘留應變、疲勞或壽命問題。[完整假設](docs/assumptions.md)
 
 ## 驗證與開發
