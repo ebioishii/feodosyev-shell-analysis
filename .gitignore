@@ -1,18 +1,43 @@
-.venv/
-.uv-cache/
-.uv-python/
+# Python
 __pycache__/
 *.py[cod]
-.pytest_cache/
-.ruff_cache/
-.ipynb_checkpoints/
-test.ipynb
+*.pyd
+.venv/
+venv/
 .env
 .env.*
+!.env.example
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.uv-cache/
+.uv-python/
+
+# Notebook 與本機設定
+.ipynb_checkpoints/
+*.ipynb
+.vscode/
+.idea/
+
+# 研究原始資料、私人文件與輸出
+data/
+outputs/
+references/
+research/
+private/
+material datas/
+docs/private/
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.pdf
+*.docx
+*.pptx
+*.png
+*.jpg
+*.jpeg
+*.tif
+*.tiff
 *.pem
 *.key
-data/raw/
-data/processed/
-outputs/
-material datas/
-2shell/
