@@ -13,6 +13,10 @@
 - `tests/test_feodosyev_single_point.py`：解析簡化案例、Granta 應變轉換及平衡殘差測試。
 - `feodosyev_curve.py`：在指定環向總應變範圍內，以連續分支預測建立完整壓力－應變曲線。
 - `tests/test_feodosyev_curve.py`：曲線延續、逐點檢查，以及 CSV／PNG 輸出測試。
+- `feodosyev_diagnostics.py`：環向應力符號、溫度對應降伏參考與局部壓力斜率診斷。
+- `tests/test_feodosyev_diagnostics.py`：解析切線、非線性應力微擾與獨立平衡重解驗證。
+
+物理條件的對照、基準結果及限制見 [docs/feodosyev_physical_diagnostics.md](docs/feodosyev_physical_diagnostics.md)。本例內殼環向應力雖由壓縮轉為拉伸，其材料圖狀態始終在塑性分支；不以曲線外觀直接認定完整四階段機制。
 
 既有一維模型只考慮共同環向應變與環向平衡，**不是**完整的 Feodosyev §9.3 雙軸模型。兩者保持為分開的程式模組；單點求解器的方程、材料應變轉換及限制見 [docs/feodosyev_single_point.md](docs/feodosyev_single_point.md)，階段 2 曲線延續與輸出規則見 [docs/feodosyev_curve.md](docs/feodosyev_curve.md)。
 

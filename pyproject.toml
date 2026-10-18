@@ -12,6 +12,7 @@ dependencies = [
 
 [tool.setuptools]
 py-modules = [
+    "feodosyev_diagnostics",
     "feodosyev_curve",
     "feodosyev_single_point",
     "heat_then_pressurize",
