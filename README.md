@@ -8,6 +8,7 @@
 - `known_initial_pressurize.py`：由已知 JSON 初始狀態開始的一維加壓模型。
 - `interpolation.py`：讀取本機 Granta SS316 資料並做溫度／硬化曲線插值。
 - `1D html/`：本機 HTML 介面，支援 Heating ON/OFF、Load/Save JSON、Auto/Manual Strain Range，以及 PNG/CSV 匯出。
+- `Feodosyev html/`：獨立的 Feodosyev §9.3 HTML 介面，支援 k、零壓力起點搜尋、手動掃描、設定 JSON 匯入／匯出及 PNG／CSV 匯出。[操作說明](docs/feodosyev_html.md)
 - `tests/test_existing_1d.py`：既有一維模型的回歸測試。
 - `feodosyev_single_point.py`：獨立的 Feodosyev §9.3 式 (9.1)–(9.6) 單點求解器。
 - `tests/test_feodosyev_single_point.py`：解析簡化案例、Granta 應變轉換及平衡殘差測試。
@@ -51,6 +52,14 @@ python "1D html/app.py"
 ```
 
 再用瀏覽器開啟 `http://127.0.0.1:8765`。
+
+Feodosyev §9.3 介面使用相同的 Python 環境與本機材料資料，另外啟動：
+
+```powershell
+python "Feodosyev html/app.py"
+```
+
+瀏覽器開啟 `http://127.0.0.1:8766`。兩個介面可同時執行，原本的 `1D html/` 不受影響。
 
 ## 執行測試
 
