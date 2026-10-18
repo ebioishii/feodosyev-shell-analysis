@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
+from functools import lru_cache
 import json
 import math
 from typing import Protocol
@@ -79,6 +80,35 @@ class LinearElasticTensionLaw:
         )
 
 
+@lru_cache(maxsize=64)
+def _granta_curve_at_temperature(temperature_c: float):
+    """Cache exact breakpoints of the existing temperature-interpolated law.
+
+    A weighted sum of piecewise linear curves changes slope only at their
+    combined plastic-strain nodes. Evaluate the existing interpolation there;
+    adding sigma/E maps every node to the total-strain axis without resampling.
+    The arrays are private, read-only, and never written to disk.
+    """
+    from interpolation import E_at, flow_stress, plastic_strain_max_at, T_hard, hardening
+
+    modulus = float(E_at(temperature_c))
+    maximum = float(plastic_strain_max_at(temperature_c))
+    upper = int(np.searchsorted(T_hard, temperature_c))
+    temperatures = ([T_hard[upper]] if T_hard[upper] == temperature_c
+                    else [T_hard[upper - 1], T_hard[upper]])
+    nodes = np.unique(np.concatenate([
+        [0.0, maximum], *(hardening[t][0] for t in temperatures),
+    ]))
+    plastic = nodes[(nodes >= 0) & (nodes <= maximum)]
+    stress = np.array([flow_stress(temperature_c, float(p)) for p in plastic])
+    total = plastic + stress / modulus
+    if not np.all(np.isfinite(total)) or not np.all(np.diff(total) > 0):
+        raise ValueError("Granta total-mechanical-strain nodes must strictly increase")
+    for array in (plastic, stress, total):
+        array.setflags(write=False)
+    return modulus, plastic, stress, total
+
+
 class GrantaSS316TensionLaw:
     """SS316 tensile diagram reconstructed from the local Granta tables.
 
@@ -88,28 +118,18 @@ class GrantaSS316TensionLaw:
 
         total mechanical strain = plastic strain + stress / E(T).
 
-    Evaluation above first yield inverts that relation; it never treats the
-    plastic-strain column as total strain.
+    Evaluation above first yield uses the exact piecewise linear inverse of
+    that relation; it never treats the plastic-strain column as total strain.
     """
 
     def __init__(self, temperature_c: float) -> None:
         temperature_c = _finite(temperature_c, "temperature_c")
-        # Keep the licensed/private data dependency lazy so analytic tests can
-        # run without copying the local Granta files into Git.
-        from interpolation import (  # pylint: disable=import-outside-toplevel
-            E_at,
-            flow_stress,
-            plastic_strain_max_at,
-        )
-
         self.temperature_c = temperature_c
-        self._flow_stress = flow_stress
-        self.elastic_modulus_pa = float(E_at(temperature_c))
-        self.max_plastic_strain = float(plastic_strain_max_at(temperature_c))
-        self.yield_stress_pa = float(flow_stress(temperature_c, 0.0))
-        self.max_stress_pa = float(
-            flow_stress(temperature_c, self.max_plastic_strain)
-        )
+        (self.elastic_modulus_pa, self._plastic_nodes, self._stress_nodes,
+         self._total_nodes) = _granta_curve_at_temperature(temperature_c)
+        self.max_plastic_strain = float(self._plastic_nodes[-1])
+        self.yield_stress_pa = float(self._stress_nodes[0])
+        self.max_stress_pa = float(self._stress_nodes[-1])
         self.yield_total_mechanical_strain = (
             self.yield_stress_pa / self.elastic_modulus_pa
         )
@@ -150,12 +170,6 @@ class GrantaSS316TensionLaw:
                 branch="elastic",
             )
 
-        def total_strain_error(plastic_strain: float) -> float:
-            stress = self._flow_stress(self.temperature_c, plastic_strain)
-            return (
-                plastic_strain + stress / self.elastic_modulus_pa - strain
-            )
-
         if math.isclose(
             strain,
             self.max_total_mechanical_strain,
@@ -163,15 +177,10 @@ class GrantaSS316TensionLaw:
             abs_tol=domain_tolerance,
         ):
             plastic_strain = self.max_plastic_strain
+            stress = self.max_stress_pa
         else:
-            plastic_strain = brentq(
-                total_strain_error,
-                0.0,
-                self.max_plastic_strain,
-                xtol=1e-14,
-                rtol=1e-14,
-            )
-        stress = float(self._flow_stress(self.temperature_c, plastic_strain))
+            stress = float(np.interp(strain, self._total_nodes, self._stress_nodes))
+            plastic_strain = strain - stress / self.elastic_modulus_pa
         elastic_strain = stress / self.elastic_modulus_pa
         return UniaxialResponse(
             total_mechanical_strain=strain,
@@ -337,6 +346,74 @@ def _axial_total_strain_domain(
     return center - span, center + span
 
 
+def _certified_axial_derivative_lower_bound(
+    material: TensionLaw, lower: float, upper: float,
+    hoop_total: float, thermal: float, k: float,
+) -> float | None:
+    """Analytic lower bound of d(sigma_x-k*sigma_y)/d(eps_x).
+
+    Only the two exact built-in material types are supported. For each linear
+    tensile segment sigma(q)=a*q+b, put y=eps_y and t=eps_x+y/2. Then
+    q^2=4*t^2/3+y^2 and the derivative of equation (9.4) is
+    4/3*[a*(1-k/2)+b*((1-k/2)*y^2+k*t*y)/q^3].
+    Its extrema occur at interval endpoints or where
+    k-4*(1-k/2)*(t/y)-(8/3)*k*(t/y)^2=0. Check both signs of t
+    on every material segment, including both sides of each corner.
+
+    Summing positive thickness-weighted bounds proves strict increase on the
+    WHOLE common material domain. A failed/unsupported certificate uses the
+    original full scan; a local slope or predictor alone is never a proof.
+    """
+    factor = 1.0 - 0.5 * k
+    if not math.isfinite(k) or abs(k) > 1e6:
+        return None  # Avoid overflow/cancellation for extreme k.
+    if type(material) is LinearElasticTensionLaw:
+        return 4.0 / 3.0 * material.elastic_modulus_pa * factor
+    if type(material) is not GrantaSS316TensionLaw:
+        return None
+    y = hoop_total - thermal
+    t_lower, t_upper = lower - thermal + 0.5*y, upper - thermal + 0.5*y
+    q_nodes = np.concatenate(([0.0], material._total_nodes))
+    stress_nodes = np.concatenate(([0.0], material._stress_nodes))
+    critical = []
+    if y != 0:
+        if k == 0:
+            critical = [0.0]
+        else:
+            # Stable quadratic roots; the product is -3/8.
+            a, b, c = (8.0/3.0)*k, 4.0*factor, -k
+            disc = math.hypot(b, math.sqrt(32.0/3.0)*k)
+            numerator = -0.5 * (b + math.copysign(disc, b))
+            critical = [y * numerator/a, y * c/numerator]
+    derivatives = []
+    for q0, q1, s0, s1 in zip(q_nodes[:-1], q_nodes[1:], stress_nodes[:-1], stress_nodes[1:]):
+        if q1 < abs(y):
+            continue
+        a = (s1-s0)/(q1-q0)
+        b = s0-a*q0
+        t_min = math.sqrt(max(0.0, 0.75*(max(q0, abs(y))**2-y*y)))
+        t_max = math.sqrt(max(0.0, 0.75*(q1*q1-y*y)))
+        for left, right in ((-t_max, -t_min), (t_min, t_max)):
+            left, right = max(left, t_lower), min(right, t_upper)
+            if left > right:
+                continue
+            for t in (left, right, *(t for t in critical if left <= t <= right)):
+                q = math.sqrt(4.0/3.0*t*t+y*y)
+                if q == 0:
+                    derivative = 4.0/3.0 * material.elastic_modulus_pa * factor
+                elif b == 0:
+                    derivative = 4.0/3.0 * a * factor
+                else:
+                    derivative = 4.0/3.0*(a*factor+b*(factor*y*y+k*t*y)/q**3)
+                derivatives.append(derivative)
+    if not derivatives or not all(math.isfinite(value) for value in derivatives):
+        return None
+    # Conservative floating-point margin, deliberately scaled to elastic E.
+    margin = 1e-10 * max(1.0, material.elastic_modulus_pa*(1+abs(k)),
+                        *(abs(value) for value in derivatives))
+    return min(derivatives) - margin
+
+
 def solve_single_point(
     *,
     radius_m: float,
@@ -375,8 +452,9 @@ def solve_single_point(
     axial_factor = _finite(k, "k")
     if min(radius, inner_h, outer_h) <= 0:
         raise ValueError("radius and shell thicknesses must be positive")
-    if root_scan_points < 3:
-        raise ValueError("root_scan_points must be at least 3")
+    if (isinstance(root_scan_points, bool)
+            or not isinstance(root_scan_points, (int, np.integer)) or root_scan_points < 3):
+        raise ValueError("root_scan_points must be an integer at least 3")
     if absolute_force_tolerance_n_per_m <= 0 or relative_force_tolerance <= 0:
         raise ValueError("force tolerances must be positive")
     if axial_strain_guess is not None:
@@ -395,6 +473,7 @@ def solve_single_point(
             "the two shells have no common axial-strain material domain"
         )
 
+    @lru_cache(maxsize=None)
     def state_at(axial_total: float) -> tuple[ShellResponse, ShellResponse]:
         return (
             evaluate_shell(
@@ -411,6 +490,7 @@ def solve_single_point(
             ),
         )
 
+    @lru_cache(maxsize=None)
     def equation_9_5(axial_total: float) -> float:
         inner, outer = state_at(axial_total)
         axial_resultant = (
@@ -423,7 +503,13 @@ def solve_single_point(
         )
         return axial_resultant - axial_factor * hoop_resultant
 
-    grid = np.linspace(lower, upper, root_scan_points)
+    inner_bound = _certified_axial_derivative_lower_bound(
+        inner_material, lower, upper, hoop_total, inner_thermal, axial_factor)
+    outer_bound = _certified_axial_derivative_lower_bound(
+        outer_material, lower, upper, hoop_total, outer_thermal, axial_factor)
+    unique = (inner_bound is not None and outer_bound is not None
+              and inner_h*inner_bound + outer_h*outer_bound > 0)
+    grid = np.array([lower, upper]) if unique else np.linspace(lower, upper, root_scan_points)
     values = [float(equation_9_5(float(point))) for point in grid]
     force_scale = max(max(abs(value) for value in values), 1.0)
     scan_zero_tolerance = max(

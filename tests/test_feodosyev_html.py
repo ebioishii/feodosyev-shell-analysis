@@ -5,6 +5,8 @@ import csv
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import threading
 import unittest
@@ -160,6 +162,32 @@ class FeodosyevHTMLTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             worker.join()
+
+    def test_launch_directory_is_detected_in_another_working_folder(self):
+        with tempfile.TemporaryDirectory(dir=ROOT / "outputs") as directory:
+            code = ("import json,runpy,sys; "
+                    "app=runpy.run_path(sys.argv[1],run_name='launch_check'); "
+                    "print(json.dumps(str(app['DEFAULT_OUTPUT_DIR'])))")
+            process = subprocess.run([sys.executable, "-c", code, str(ROOT / "Feodosyev html/app.py")],
+                                     cwd=directory, capture_output=True, text=True, check=True)
+            self.assertEqual(Path(json.loads(process.stdout)), Path(directory).resolve())
+
+    def test_spinning_gif_preserves_original_frames_without_standing_intro(self):
+        from PIL import Image
+        import numpy as np
+        with Image.open(ROOT / "cat meme/oiiaioiiiai.gif") as original, Image.open(
+                ROOT / "Feodosyev html/assets/generating.gif") as animation:
+            self.assertEqual(animation.n_frames, 29)
+            duration = 0
+            for index in range(animation.n_frames):
+                original.seek(index + 17)
+                animation.seek(index)
+                a, b = np.array(original.convert("RGBA")), np.array(animation.convert("RGBA"))
+                self.assertTrue(np.array_equal(a[:, :, 3], b[:, :, 3]))
+                self.assertTrue(np.array_equal(a[a[:, :, 3] > 0], b[b[:, :, 3] > 0]))
+                self.assertEqual(original.info["duration"], animation.info["duration"])
+                duration += animation.info["duration"]
+            self.assertEqual(duration, 1930)
 
 
 if __name__ == "__main__":

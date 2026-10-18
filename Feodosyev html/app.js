@@ -46,6 +46,7 @@ const state = {
   generating: false,
   importing: false,
   ready: false,
+  scanDefaults: null,
   saving: new Set(),
   maxSampleCount: 5000,
 };
@@ -56,8 +57,8 @@ const exportControls = {
   json: {button: elements.saveJson, status: elements.jsonState, name: elements.jsonExportName, message: elements.jsonMessage},
 };
 
-// Original oiiaioiiiai.gif: 67 frames, 5,000 ms per complete loop.
-const GIF_LOOP_DURATION_MS = 5000;
+// Original frames 17–45: complete spinning segment, without the standing intro.
+const GIF_LOOP_DURATION_MS = 1930;
 let animationRun = 0;
 
 function playWorkingAnimation(image) {
@@ -65,15 +66,15 @@ function playWorkingAnimation(image) {
     image.onload = () => {
       image.onload = null;
       image.onerror = null;
-      // Start the minimum playback time after the browser can paint the image.
+      // Start timing after the browser can paint the first spinning frame.
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => setTimeout(resolve, GIF_LOOP_DURATION_MS));
+        requestAnimationFrame(() => resolve({startedAt: performance.now(), loopMs: GIF_LOOP_DURATION_MS}));
       });
     };
     image.onerror = () => {
       image.onload = null;
       image.onerror = null;
-      resolve();
+      resolve({startedAt: performance.now(), loopMs: 0});
     };
     animationRun += 1;
     image.src = `/assets/generating.gif?run=${Date.now()}-${animationRun}`;
@@ -81,7 +82,16 @@ function playWorkingAnimation(image) {
 }
 
 async function waitForOperationAndAnimation(operation, playback) {
-  const [outcome] = await Promise.allSettled([operation, playback]);
+  const completed = operation.then(
+    value => ({status: "fulfilled", value, completedAt: performance.now()}),
+    reason => ({status: "rejected", reason, completedAt: performance.now()}),
+  );
+  const [outcome, timing] = await Promise.all([completed, playback]);
+  if (timing.loopMs > 0) {
+    const loops = Math.max(1, Math.ceil((outcome.completedAt - timing.startedAt) / timing.loopMs));
+    const remaining = timing.startedAt + loops * timing.loopMs - performance.now();
+    if (remaining > 0) await new Promise(resolve => setTimeout(resolve, remaining));
+  }
   if (outcome.status === "rejected") throw outcome.reason;
   return outcome.value;
 }
@@ -148,8 +158,11 @@ function parseFiniteNumber(element, label) {
 }
 
 function collectInputs() {
+  const automatic = elements.autoStrainToggle.checked;
+  const scanFields = new Set(["start_strain_percent", "max_strain_percent", "sample_count"]);
   return {...Object.fromEntries(Object.entries(inputFields).map(([key, input]) =>
-    [key, parseFiniteNumber(input, key)])), auto_strain_range: elements.autoStrainToggle.checked};
+    [key, automatic && scanFields.has(key) && input.value.trim() === ""
+      ? state.scanDefaults[key] : parseFiniteNumber(input, key)])), auto_strain_range: automatic};
 }
 
 function applySettings(settings) {
@@ -469,9 +482,8 @@ fetch("/api/config")
   })
   .then((config) => {
     state.ready = true;
-    applySettings(config.defaults);
+    state.scanDefaults = config.defaults;
     elements.filePath.value = config.default_output_path;
-    for (const input of [elements.pngName, elements.csvName, elements.jsonExportName]) input.value = "feodosyev";
     state.temperatureMin = config.temperature_min_c;
     state.temperatureMax = config.temperature_max_c;
     state.maxSampleCount = config.max_sample_count;
@@ -482,6 +494,7 @@ fetch("/api/config")
     elements.outerTemperature.max = String(state.temperatureMax);
     updateSaveButtons();
     updateMode();
+    updateStrainMode();
   })
   .catch((error) => {
     showCalculationError(`無法讀取後端設定：${error.message}`);

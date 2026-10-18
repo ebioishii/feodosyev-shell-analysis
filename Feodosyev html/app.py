@@ -7,7 +7,6 @@ from dataclasses import asdict
 import json
 import math
 import mimetypes
-import os
 from pathlib import Path
 import re
 import sys
@@ -26,7 +25,8 @@ from matplotlib.figure import Figure
 APP_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = APP_DIR.parent
 CAT_DIR = PROJECT_DIR / "cat meme"
-DEFAULT_OUTPUT_DIR = PROJECT_DIR / "outputs"
+# Capture the launch working directory, before any request or path changes.
+DEFAULT_OUTPUT_DIR = Path.cwd().resolve()
 if str(PROJECT_DIR) not in sys.path:
     sys.path.insert(0, str(PROJECT_DIR))
 
@@ -49,7 +49,7 @@ DEFAULTS = {
 STATIC_FILES = {
     "/": APP_DIR / "index.html", "/index.html": APP_DIR / "index.html",
     "/styles.css": APP_DIR / "styles.css", "/app.js": APP_DIR / "app.js",
-    "/assets/generating.gif": CAT_DIR / "oiiaioiiiai.gif",
+    "/assets/generating.gif": APP_DIR / "assets" / "generating.gif",
     "/assets/cat-ok.png": CAT_DIR / "cat_ok.png",
     "/assets/cat-vegetable.jpg": CAT_DIR / "cat_vegetable.jpg",
 }
@@ -346,7 +346,6 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8766)
     args = parser.parse_args()
 
-    os.chdir(PROJECT_DIR)
     server = ThreadingHTTPServer((args.host, args.port), RequestHandler)
     print(f"Feodosyev section 9.3 interface: http://{args.host}:{args.port}")
     print("Press Ctrl+C to stop.")
