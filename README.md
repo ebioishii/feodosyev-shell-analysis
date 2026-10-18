@@ -9,8 +9,10 @@
 - `interpolation.py`：讀取本機 Granta SS316 資料並做溫度／硬化曲線插值。
 - `1D html/`：本機 HTML 介面，支援 Heating ON/OFF、Load/Save JSON、Auto/Manual Strain Range，以及 PNG/CSV 匯出。
 - `tests/test_existing_1d.py`：既有一維模型的回歸測試。
+- `feodosyev_single_point.py`：獨立的 Feodosyev §9.3 式 (9.1)–(9.6) 單點求解器。
+- `tests/test_feodosyev_single_point.py`：解析簡化案例、Granta 應變轉換及平衡殘差測試。
 
-既有一維模型只考慮共同環向應變與環向平衡，**不是**完整的 Feodosyev §9.3 雙軸模型。兩者會保持為分開的程式模組。
+既有一維模型只考慮共同環向應變與環向平衡，**不是**完整的 Feodosyev §9.3 雙軸模型。兩者保持為分開的程式模組；單點求解器的方程、材料應變轉換及限制見 [docs/feodosyev_single_point.md](docs/feodosyev_single_point.md)。
 
 ## 本機材料資料
 

@@ -12,6 +12,7 @@ dependencies = [
 
 [tool.setuptools]
 py-modules = [
+    "feodosyev_single_point",
     "heat_then_pressurize",
     "interpolation",
     "known_initial_pressurize",

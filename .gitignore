@@ -12,6 +12,7 @@ venv/
 .mypy_cache/
 .uv-cache/
 .uv-python/
+*.egg-info/
 
 # Notebook and editor state
 .ipynb_checkpoints/
@@ -38,6 +39,7 @@ outputs/
 .stage0-verification/
 .stage1-verification/
 .test-temp-*/
+tmp/
 
 # Common private/research file formats
 *.csv
