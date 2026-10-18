@@ -17,10 +17,14 @@
 - `tests/test_feodosyev_diagnostics.py`：解析切線、非線性應力微擾與獨立平衡重解驗證。
 - `feodosyev_temperature_study.py`：階段 4A 的 Inner 固定工作溫度參數研究，含零壓力起點求解及三張比較圖。
 - `tests/test_feodosyev_temperature_study.py`：解析起點/低點、七種溫度、538 C 基準及明確失敗回報測試。
+- `feodosyev_thickness_study.py`：階段 4B-1 固定總壁厚的厚度比研究，含有號膜力與同壓力承載比較。
+- `tests/test_feodosyev_thickness_study.py`：厚度換算、膜力解析檢查、六組案例、η=2 基準及共同壓力求根驗證。
 
 物理條件的對照、基準結果及限制見 [docs/feodosyev_physical_diagnostics.md](docs/feodosyev_physical_diagnostics.md)。本例內殼環向應力雖由壓縮轉為拉伸，其材料圖狀態始終在塑性分支；不以曲線外觀直接認定完整四階段機制。
 
 Inner 溫度敏感度研究的計算方式與輸出格式見 [docs/feodosyev_temperature_study.md](docs/feodosyev_temperature_study.md)。
+
+固定總壁厚的厚度比分析見 [docs/feodosyev_thickness_study.md](docs/feodosyev_thickness_study.md)。
 
 既有一維模型只考慮共同環向應變與環向平衡，**不是**完整的 Feodosyev §9.3 雙軸模型。兩者保持為分開的程式模組；單點求解器的方程、材料應變轉換及限制見 [docs/feodosyev_single_point.md](docs/feodosyev_single_point.md)，階段 2 曲線延續與輸出規則見 [docs/feodosyev_curve.md](docs/feodosyev_curve.md)。
 

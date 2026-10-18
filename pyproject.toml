@@ -12,6 +12,7 @@ dependencies = [
 
 [tool.setuptools]
 py-modules = [
+    "feodosyev_thickness_study",
     "feodosyev_temperature_study",
     "feodosyev_diagnostics",
     "feodosyev_curve",
