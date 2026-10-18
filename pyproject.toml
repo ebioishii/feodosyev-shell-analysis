@@ -1,7 +1,18 @@
 [project]
 name = "feodosyev-shell-analysis"
 version = "0.1.0"
-description = "Minimal research project for Feodosyev Chapter 9 Section 9.3"
+description = "Research tools for Feodosyev Chapter 9 Section 9.3"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "matplotlib>=3.9",
+    "numpy>=2.1",
+    "scipy>=1.14",
+]
+
+[tool.setuptools]
+py-modules = [
+    "heat_then_pressurize",
+    "interpolation",
+    "known_initial_pressurize",
+]

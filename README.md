@@ -1,18 +1,45 @@
 # Feodosyev Shell Analysis
 
-本專案重新從 Feodosyev Chapter 9 §9.3 的雙層圓筒理論出發。研究目標是理解原文方程、求解流程與壓力–應變關係，最後嘗試重現 Fig. 9.7。
+本專案使用同一個 GitHub repository，逐步研究 Feodosyev Chapter 9 §9.3 的雙薄殼方法。
 
-目前只有研究範圍與專案設定。原文公式、材料本構及數值結果都尚未核對；專案現階段沒有求解器、材料模型、Notebook 或可執行範例。
+## 目前內容
 
-後續依序進行：
+- `heat_then_pressurize.py`：既有的一維雙殼升溫後加壓模型。
+- `known_initial_pressurize.py`：由已知 JSON 初始狀態開始的一維加壓模型。
+- `interpolation.py`：讀取本機 Granta SS316 資料並做溫度／硬化曲線插值。
+- `1D html/`：本機 HTML 介面，支援 Heating ON/OFF、Load/Save JSON、Auto/Manual Strain Range，以及 PNG/CSV 匯出。
+- `tests/test_existing_1d.py`：既有一維模型的回歸測試。
 
-1. 閱讀並核對原始文獻的版本、符號、圖與邊界條件。
-2. 重建 §9.3 的數學公式與假設。
-3. 研究原文採用的應力–應變本構。
-4. 建立最小數值求解器，並用獨立算例驗證。
-5. 重建壓力–應變曲線，與 Fig. 9.7 比較。
-6. 分析 Inner／Outer 的四個階段及其轉換條件。
+既有一維模型只考慮共同環向應變與環向平衡，**不是**完整的 Feodosyev §9.3 雙軸模型。兩者會保持為分開的程式模組。
 
-研究範圍與尚待確認事項見 [docs/research_scope.md](docs/research_scope.md)。
+## 本機材料資料
 
-原始文獻、實驗資料、處理後資料和圖表只存於本機；提交前需逐項確認來源與分享權限。本專案尚未設定開源授權。
+Granta 原始材料資料受來源與授權限制，不納入 Git。執行既有一維模型前，本機需有：
+
+```text
+database/Granta_SS316_annealed_csv/Elasticity.csv
+database/Granta_SS316_annealed_csv/Coefficient of Thermal Expansion.csv
+database/Granta_SS316_annealed_csv/Zero-Thermal-Strain Reference Temperature.csv
+database/Granta_SS316_annealed_csv/Isotropic Hardening.csv
+```
+
+缺少這些檔案時，材料相關測試會清楚顯示為 skipped，而不是假裝已驗證。
+
+## 執行既有 HTML 介面
+
+在專案根目錄建立環境並安裝套件後：
+
+```powershell
+python -m pip install -e .
+python "1D html/app.py"
+```
+
+再用瀏覽器開啟 `http://127.0.0.1:8765`。
+
+## 執行測試
+
+```powershell
+python -m unittest discover -s tests -v
+```
+
+研究範圍與模型邊界見 [docs/research_scope.md](docs/research_scope.md)。原始文獻、Granta 資料、ANSYS 專案、Notebook、設計過程截圖與計算輸出都只保留於本機，不納入 Git。

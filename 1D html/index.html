@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>1D Double-Shell Analysis</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="left-column" aria-labelledby="input-title">
+        <h1 id="input-title">INPUT</h1>
+
+        <div class="input-card dashed-card">
+          <div class="field-group radius-group">
+            <label for="radius">Common Radius</label>
+            <div class="number-with-unit">
+              <input id="radius" type="number" min="0" step="any" inputmode="decimal">
+              <span>mm</span>
+            </div>
+          </div>
+
+          <fieldset class="field-group thickness-group">
+            <legend>Thickness</legend>
+            <label class="compact-row" for="inner-thickness">
+              <span>inner:</span>
+              <input id="inner-thickness" type="number" min="0" step="any" inputmode="decimal">
+              <span>mm</span>
+            </label>
+            <label class="compact-row" for="outer-thickness">
+              <span>outer:</span>
+              <input id="outer-thickness" type="number" min="0" step="any" inputmode="decimal">
+              <span>mm</span>
+            </label>
+          </fieldset>
+
+          <fieldset class="field-group temperature-group">
+            <legend>Temperature</legend>
+            <label class="compact-row" for="inner-temperature">
+              <span>inner:</span>
+              <input id="inner-temperature" type="number" step="any" inputmode="decimal">
+              <span>°C</span>
+            </label>
+            <label class="compact-row" for="outer-temperature">
+              <span>outer:</span>
+              <input id="outer-temperature" type="number" step="any" inputmode="decimal">
+              <span>°C</span>
+            </label>
+          </fieldset>
+
+          <div class="heating-row">
+            <span>Heating from 20°C</span>
+            <label class="switch" aria-label="Heating from 20 degrees Celsius">
+              <input id="heating-toggle" type="checkbox" checked>
+              <span class="switch-track"></span>
+            </label>
+            <button id="load-json" class="small-outline-button" type="button" disabled>Load JSON</button>
+            <input id="json-file" class="visually-hidden" type="file" accept="application/json,.json">
+          </div>
+          <div id="json-name" class="json-name" aria-live="polite"></div>
+        </div>
+
+        <h2>Export</h2>
+        <div class="export-card dashed-card">
+          <label class="path-label" for="file-path">File Path:</label>
+          <input id="file-path" class="path-input" type="text" spellcheck="false">
+
+          <div class="save-row">
+            <label class="filename-field" for="png-name">
+              <input id="png-name" type="text" spellcheck="false">
+              <span>.png</span>
+            </label>
+            <span id="png-state" class="save-state" aria-live="polite"></span>
+            <button id="save-png" class="save-button save-png" type="button" disabled>Save png</button>
+            <p id="png-message" class="save-message" aria-live="polite"></p>
+          </div>
+
+          <div class="save-row">
+            <label class="filename-field" for="csv-name">
+              <input id="csv-name" type="text" spellcheck="false">
+              <span>.csv</span>
+            </label>
+            <span id="csv-state" class="save-state" aria-live="polite"></span>
+            <button id="save-csv" class="save-button save-csv" type="button" disabled>Save csv</button>
+            <p id="csv-message" class="save-message" aria-live="polite"></p>
+          </div>
+
+          <div class="save-row">
+            <label class="filename-field" for="json-export-name">
+              <input id="json-export-name" type="text" spellcheck="false">
+              <span>.json</span>
+            </label>
+            <span id="json-state" class="save-state" aria-live="polite"></span>
+            <button id="save-json" class="save-button save-json" type="button" disabled>Save json</button>
+            <p id="json-message" class="save-message" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="right-column" aria-labelledby="output-title">
+        <h1 id="output-title">OUTPUT</h1>
+        <div class="output-card dashed-card">
+          <div class="output-toolbar">
+            <button id="generate" class="generate-button" type="button">Generate</button>
+            <img id="generate-gif" class="generate-status-image hidden" src="/assets/generating.gif" alt="Generating">
+            <img id="generate-ok" class="generate-status-image hidden" src="/assets/cat-ok.png" alt="Calculation successful">
+          </div>
+
+          <div class="strain-controls">
+            <div class="auto-strain-row">
+              <span>Auto Strain Range</span>
+              <label class="switch switch-blue" aria-label="Auto Strain Range">
+                <input id="auto-strain-toggle" type="checkbox" checked>
+                <span class="switch-track"></span>
+              </label>
+            </div>
+            <div id="manual-strain-fields" class="manual-strain-fields hidden">
+              <label for="max-strain">Max Strain (%)
+                <input id="max-strain" type="number" step="any" max="2" inputmode="decimal" disabled>
+              </label>
+              <label for="sample-count">Sample Count
+                <input id="sample-count" type="number" min="2" max="5000" step="1" inputmode="numeric" disabled>
+              </label>
+            </div>
+          </div>
+
+          <p id="output-status" class="output-status" aria-live="polite"></p>
+
+          <div id="error-panel" class="error-panel hidden" role="alert">
+            <p><strong>Error:</strong> <span id="error-message"></span></p>
+            <img src="/assets/cat-vegetable.jpg" alt="Error cat">
+          </div>
+
+          <div id="chart-wrap" class="chart-wrap hidden">
+            <canvas id="result-chart" aria-label="Calculated gas pressure versus total hoop strain"></canvas>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>

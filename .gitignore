@@ -13,20 +13,33 @@ venv/
 .uv-cache/
 .uv-python/
 
-# Notebook 與本機設定
+# Notebook and editor state
 .ipynb_checkpoints/
 *.ipynb
 .vscode/
 .idea/
 
-# 研究原始資料、私人文件與輸出
+# Licensed/private material data and research inputs
 data/
-outputs/
+database/
 references/
 research/
 private/
 material datas/
 docs/private/
+
+# Local solver/FEA verification projects and design references
+1D html/verification/
+1D html/*.json
+html design/
+
+# Generated output and temporary verification files
+outputs/
+.stage0-verification/
+.stage1-verification/
+.test-temp-*/
+
+# Common private/research file formats
 *.csv
 *.tsv
 *.xlsx
@@ -41,3 +54,8 @@ docs/private/
 *.tiff
 *.pem
 *.key
+
+# The following three small images are required by the local HTML UI.
+!cat meme/*.png
+!cat meme/*.jpg
+!cat meme/*.gif
