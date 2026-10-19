@@ -29,9 +29,7 @@ private/
 material datas/
 docs/private/
 
-# Local solver/FEA verification projects and design references
-1D html/verification/
-1D html/*.json
+# Local design references
 html design/
 
 # Generated output and temporary verification files
@@ -57,7 +55,6 @@ tmp/
 *.pem
 *.key
 
-# The following three small images are required by the local HTML UI.
-!cat meme/*.png
-!cat meme/*.jpg
-!cat meme/*.gif
+# Status images required by the HTML UI.
+!Feodosyev html/assets/cat-ok.png
+!Feodosyev html/assets/cat-vegetable.jpg

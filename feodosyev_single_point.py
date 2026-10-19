@@ -1,9 +1,8 @@
 """Single-point implementation of Feodosyev Chapter 9 section 9.3.
 
 This module implements equations (9.1)-(9.6) exactly in their published
-deformation-theory form.  It deliberately does not reuse the incremental 1D
-plasticity algorithm in ``heat_then_pressurize.py`` and does not replace
-equation (9.4) with a three-dimensional incremental J2 model.
+deformation-theory form, without replacing equation (9.4) with a
+three-dimensional incremental J2 model.
 
 All internal values use SI units: metre, pascal, and dimensionless strain.
 """

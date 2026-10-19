@@ -1,7 +1,7 @@
 [project]
 name = "feodosyev-shell-analysis"
 version = "0.1.0"
-description = "Research tools for Feodosyev Chapter 9 Section 9.3"
+description = "Local HTML interface for Feodosyev Chapter 9 Section 9.3"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
@@ -12,12 +12,8 @@ dependencies = [
 
 [tool.setuptools]
 py-modules = [
-    "feodosyev_thickness_study",
-    "feodosyev_temperature_study",
-    "feodosyev_diagnostics",
+    "feodosyev_origin",
     "feodosyev_curve",
     "feodosyev_single_point",
-    "heat_then_pressurize",
     "interpolation",
-    "known_initial_pressurize",
 ]

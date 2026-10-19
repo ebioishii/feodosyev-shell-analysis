@@ -24,7 +24,6 @@ from matplotlib.figure import Figure
 
 APP_DIR = Path(__file__).resolve().parent
 PROJECT_DIR = APP_DIR.parent
-CAT_DIR = PROJECT_DIR / "cat meme"
 # Capture the launch working directory, before any request or path changes.
 DEFAULT_OUTPUT_DIR = Path.cwd().resolve()
 if str(PROJECT_DIR) not in sys.path:
@@ -32,7 +31,7 @@ if str(PROJECT_DIR) not in sys.path:
 
 from feodosyev_curve import solve_uniform_curve, write_curve_csv
 from feodosyev_single_point import GrantaSS316TensionLaw
-from feodosyev_temperature_study import _PointEvaluator, _zero_pressure_origin
+from feodosyev_origin import _PointEvaluator, _zero_pressure_origin
 from interpolation import T_E, T_alpha, T_hard, thermal_strain
 
 TEMPERATURE_MIN_C = max(float(T_E.min()), float(T_alpha.min()), float(T_hard.min()))
@@ -50,8 +49,8 @@ STATIC_FILES = {
     "/": APP_DIR / "index.html", "/index.html": APP_DIR / "index.html",
     "/styles.css": APP_DIR / "styles.css", "/app.js": APP_DIR / "app.js",
     "/assets/generating.gif": APP_DIR / "assets" / "generating.gif",
-    "/assets/cat-ok.png": CAT_DIR / "cat_ok.png",
-    "/assets/cat-vegetable.jpg": CAT_DIR / "cat_vegetable.jpg",
+    "/assets/cat-ok.png": APP_DIR / "assets" / "cat-ok.png",
+    "/assets/cat-vegetable.jpg": APP_DIR / "assets" / "cat-vegetable.jpg",
 }
 INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 STATE_LOCK = threading.Lock()

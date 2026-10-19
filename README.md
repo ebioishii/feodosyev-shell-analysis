@@ -1,70 +1,66 @@
-# Feodosyev Shell Analysis
+# Feodosyev §9.3 HTML
 
-本專案使用同一個 GitHub repository，逐步研究 Feodosyev Chapter 9 §9.3 的雙薄殼方法。
+本專案提供 Feodosyev §9.3 雙薄殼的本機操作介面，可計算壓力－總環向應變曲線，並匯出 PNG、CSV 與可再次匯入的設定 JSON。
 
-## 目前內容
+## 保留的程式
 
-- `heat_then_pressurize.py`：既有的一維雙殼升溫後加壓模型。
-- `known_initial_pressurize.py`：由已知 JSON 初始狀態開始的一維加壓模型。
-- `interpolation.py`：讀取本機 Granta SS316 資料並做溫度／硬化曲線插值。
-- `1D html/`：本機 HTML 介面，支援 Heating ON/OFF、Load/Save JSON、Auto/Manual Strain Range，以及 PNG/CSV 匯出。
-- `Feodosyev html/`：獨立的 Feodosyev §9.3 HTML 介面，支援 k、零壓力起點搜尋、手動掃描、設定 JSON 匯入／匯出及 PNG／CSV 匯出。[操作說明](docs/feodosyev_html.md)
-- `tests/test_existing_1d.py`：既有一維模型的回歸測試。
-- `feodosyev_single_point.py`：獨立的 Feodosyev §9.3 式 (9.1)–(9.6) 單點求解器。
-- `tests/test_feodosyev_single_point.py`：解析簡化案例、Granta 應變轉換及平衡殘差測試。
-- `feodosyev_curve.py`：在指定環向總應變範圍內，以連續分支預測建立完整壓力－應變曲線。
-- `tests/test_feodosyev_curve.py`：曲線延續、逐點檢查，以及 CSV／PNG 輸出測試。
-- `feodosyev_diagnostics.py`：環向應力符號、溫度對應降伏參考與局部壓力斜率診斷。
-- `tests/test_feodosyev_diagnostics.py`：解析切線、非線性應力微擾與獨立平衡重解驗證。
-- `feodosyev_temperature_study.py`：階段 4A 的 Inner 固定工作溫度參數研究，含零壓力起點求解及三張比較圖。
-- `tests/test_feodosyev_temperature_study.py`：解析起點/低點、七種溫度、538 C 基準及明確失敗回報測試。
-- `feodosyev_thickness_study.py`：階段 4B-1 固定總壁厚的厚度比研究，含有號膜力與同壓力承載比較。
-- `tests/test_feodosyev_thickness_study.py`：厚度換算、膜力解析檢查、六組案例、η=2 基準及共同壓力求根驗證。
+- `Feodosyev html/`：網頁、Python 後端與操作狀態圖片。
+- `feodosyev_single_point.py`：Feodosyev 單點求解器。
+- `feodosyev_curve.py`：連續掃描與 CSV 輸出。
+- `feodosyev_origin.py`：Auto 模式使用的零壓力起點搜尋。
+- `interpolation.py`：讀取材料資料並進行插值。
+- `pyproject.toml`：Python 版本與套件需求。
 
-物理條件的對照、基準結果及限制見 [docs/feodosyev_physical_diagnostics.md](docs/feodosyev_physical_diagnostics.md)。本例內殼環向應力雖由壓縮轉為拉伸，其材料圖狀態始終在塑性分支；不以曲線外觀直接認定完整四階段機制。
+## 啟動
 
-Inner 溫度敏感度研究的計算方式與輸出格式見 [docs/feodosyev_temperature_study.md](docs/feodosyev_temperature_study.md)。
+需要 Python 3.12 以上。在專案資料夾開啟 PowerShell。
 
-固定總壁厚的厚度比分析見 [docs/feodosyev_thickness_study.md](docs/feodosyev_thickness_study.md)。
+已有本機 `.venv` 時，直接執行：
 
-既有一維模型只考慮共同環向應變與環向平衡，**不是**完整的 Feodosyev §9.3 雙軸模型。兩者保持為分開的程式模組；單點求解器的方程、材料應變轉換及限制見 [docs/feodosyev_single_point.md](docs/feodosyev_single_point.md)，階段 2 曲線延續與輸出規則見 [docs/feodosyev_curve.md](docs/feodosyev_curve.md)。
+```powershell
+.\.venv\Scripts\python.exe "Feodosyev html/app.py"
+```
+
+新環境先建立環境並安裝套件：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\python.exe "Feodosyev html/app.py"
+```
+
+用瀏覽器開啟 <http://127.0.0.1:8766>。停止時，在啟動程式的終端機按 Ctrl+C。
+若埠號已被使用，可加上 `--port 8767`，再開啟對應網址。
+請透過 Python 後端啟動；只開啟 `index.html` 無法進行計算。
 
 ## 本機材料資料
 
-Granta 原始材料資料受來源與授權限制，不納入 Git。執行既有一維模型前，本機需有：
+`interpolation.py` 需要下列四個檔案，放在專案內的 `database/Granta_SS316_annealed_csv/`：
 
 ```text
-database/Granta_SS316_annealed_csv/Elasticity.csv
-database/Granta_SS316_annealed_csv/Coefficient of Thermal Expansion.csv
-database/Granta_SS316_annealed_csv/Zero-Thermal-Strain Reference Temperature.csv
-database/Granta_SS316_annealed_csv/Isotropic Hardening.csv
+Elasticity.csv
+Coefficient of Thermal Expansion.csv
+Zero-Thermal-Strain Reference Temperature.csv
+Isotropic Hardening.csv
 ```
 
-缺少這些檔案時，材料相關測試會清楚顯示為 skipped，而不是假裝已驗證。
+Granta 原始資料受來源與授權限制，不隨 GitHub 專案提供。請自行準備有權使用的資料；缺少資料時無法啟動計算。本機的材料原始檔不因程式整理而刪除。
 
-## 執行既有 HTML 介面
+## 操作
 
-在專案根目錄建立環境並安裝套件後：
+初次開啟時，只有 File Path 會填入 Python 啟動當下的工作資料夾，其餘數值與檔名欄位保持空白。
 
-```powershell
-python -m pip install -e .
-python "1D html/app.py"
-```
+1. 輸入半徑、兩殼厚度、兩殼溫度與無因次 Axial Load Factor（k），或用 Load JSON 載入設定。
+2. Auto Strain Range 開啟時，程式搜尋非負壓力起點；掃描設定留白時使用終點 3%、481 點。已匯入或手動填入的終點與點數會沿用。
+3. 關閉 Auto 後，必須填寫 Start Strain (%)、End Strain (%) 與 Sample Count（2–5000，包含兩端）。例如 3 表示總環向應變 3%。
+4. 按 Generate。成功後，在 EXPORT 填入檔名，再按對應的 Save 按鈕。File Path 必須是已存在的資料夾，程式不覆寫同名檔案。
 
-再用瀏覽器開啟 `http://127.0.0.1:8765`。
+k 必須是有限數值；材料範圍、非負壓力、求解分支與平衡檢查無法通過時，畫面會顯示原因。掃描終點不代表承載極限。
 
-Feodosyev §9.3 介面使用相同的 Python 環境與本機材料資料，另外啟動：
+- PNG：保存主圖。
+- CSV：保存各計算點的壓力、共同軸向／環向應變、兩殼軸向／環向應力及求解欄位。應變沒有單位，壓力與應力的 Pa／MPa 依欄位名稱標示。
+- JSON：保存本次成功計算的全部設定與摘要，可用 Load JSON 再次載入。它是輸入設定，不是塑性歷史初始狀態。
 
-```powershell
-python "Feodosyev html/app.py"
-```
+設定 JSON 的 `format` 為 `feodosyev_section_9_3_settings`；`units` 必須是 `length=mm`、`temperature=degC`、`strain=%`、`k=dimensionless`。`settings` 必須包含半徑、兩殼厚度、兩殼溫度、k、Auto 開關、掃描起終點與取樣數。建議先用 Save JSON 產生完整設定，再匯入重用。
 
-瀏覽器開啟 `http://127.0.0.1:8766`。兩個介面可同時執行，原本的 `1D html/` 不受影響。
-
-## 執行測試
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-研究範圍與模型邊界見 [docs/research_scope.md](docs/research_scope.md)。原始文獻、Granta 資料、ANSYS 專案、Notebook、設計過程截圖與計算輸出都只保留於本機，不納入 Git。
+材料插值與 Feodosyev 方程由既有 Python 模組處理，網頁不另外實作材料或塑性本構。
