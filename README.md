@@ -4,7 +4,7 @@
 
 本專案提供Feodosyev method雙薄殼的本機操作介面，可計算p_g-ΔR/R曲線，並匯出png、csv與可再次匯入的設定 json。
 
-## 保留的程式
+## 檔案介紹
 
 - `Feodosyev html/`：網頁、Python後端與操作狀態圖片。
 - `feodosyev_single_point.py`：Feodosyev單點求解器。
@@ -13,7 +13,7 @@
 - `interpolation.py`：讀取材料資料並進行插值，可以自行套用數據使用這個進行插值處理
 - `pyproject.toml`：Python版本與套件需求。
 
-## 啟動
+## 啟動方式
 
 需要Python 3.12以上。在專案資料夾開啟PowerShell。
 
@@ -48,7 +48,7 @@ Isotropic Hardening.csv
 
 目前使用ANSYS提供的Granta資料，請自行準備有權使用的資料；缺少資料時無法啟動計算。本機的材料原始檔不因程式整理而刪除。
 
-## 操作
+## 操作方式
 
 1. 輸入半徑、兩殼厚度、兩殼溫度與Axial Load Factor（k），或用Load JSON載入設定。
 2. Auto Strain Range 開啟時，程式搜尋非負壓力起點；掃描設定留白時使用終點3%、481點。已匯入或手動填入的終點與點數會沿用。
