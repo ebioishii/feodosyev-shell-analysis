@@ -48,8 +48,6 @@ Granta 原始資料受來源與授權限制，不隨 GitHub 專案提供。請�
 
 ## 操作
 
-初次開啟時，只有 File Path 會填入 Python 啟動當下的工作資料夾，其餘數值與檔名欄位保持空白。
-
 1. 輸入半徑、兩殼厚度、兩殼溫度與無因次 Axial Load Factor（k），或用 Load JSON 載入設定。
 2. Auto Strain Range 開啟時，程式搜尋非負壓力起點；掃描設定留白時使用終點 3%、481 點。已匯入或手動填入的終點與點數會沿用。
 3. 關閉 Auto 後，必須填寫 Start Strain (%)、End Strain (%) 與 Sample Count（2–5000，包含兩端）。例如 3 表示總環向應變 3%。
@@ -59,8 +57,6 @@ k 必須是有限數值；材料範圍、非負壓力、求解分支與平衡檢
 
 - PNG：保存主圖。
 - CSV：保存各計算點的壓力、共同軸向／環向應變、兩殼軸向／環向應力及求解欄位。應變沒有單位，壓力與應力的 Pa／MPa 依欄位名稱標示。
-- JSON：保存本次成功計算的全部設定與摘要，可用 Load JSON 再次載入。它是輸入設定，不是塑性歷史初始狀態。
+- JSON：保存本次的參數設定，可用 Load JSON 再次載入。
 
 設定 JSON 的 `format` 為 `feodosyev_section_9_3_settings`；`units` 必須是 `length=mm`、`temperature=degC`、`strain=%`、`k=dimensionless`。`settings` 必須包含半徑、兩殼厚度、兩殼溫度、k、Auto 開關、掃描起終點與取樣數。建議先用 Save JSON 產生完整設定，再匯入重用。
-
-材料插值與 Feodosyev 方程由既有 Python 模組處理，網頁不另外實作材料或塑性本構。
