@@ -1,4 +1,4 @@
-# Feodosyev §9.3 HTML
+# Feodosyev Medthod
 
 本專案提供 Feodosyev §9.3 雙薄殼的本機操作介面，可計算壓力－總環向應變曲線，並匯出 PNG、CSV 與可再次匯入的設定 JSON。
 
